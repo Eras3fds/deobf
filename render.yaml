@@ -1,21 +1,32 @@
-# ============================================================
-# render.yaml deployment descriptor
-# ============================================================
-
 services:
   - type: web
-    name: prometheus-deob-v2
-    autoDeploy: true
+    name: prometheus-deob-bot
     env: docker
-    plan: starter
-
-    docker:
-      filePath: ./Dockerfile
-
-    ports:
-      - port: 3000
-        protocol: http
-
+    plan: starter # Or 'free' for hobby projects
+    dockerfilePath: ./Dockerfile
+    
     envVars:
+      - key: DISCORD_TOKEN
+        sync: false # Set in Render dashboard (never commit!)
+        
+      - key: ALLOWED_CHANNELS
+        sync: false # Comma-separated channel IDs
+        
+      - key: MAX_FILE_SIZE
+        value: 10485760 # 10MB
+        
+      - key: LUA_PATH
+        value: luajit
+        
       - key: PORT
-        value: 3000
+        value: 10000
+        
+      - key: NODE_ENV
+        value: production
+        
+    healthCheckPath: /health
+    autoDeploy: true
+    
+    # Resource limits (adjust as needed)
+    diskSizeGB: 1
+    memoryMB: 512
