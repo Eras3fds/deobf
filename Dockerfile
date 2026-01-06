@@ -39,8 +39,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install Node.js dependencies
-RUN npm ci --only=production
+# Install Node.js dependencies (use install instead of ci)
+RUN npm install --only=production
 
 # Copy application files
 COPY cli.lua ./server.js ./
