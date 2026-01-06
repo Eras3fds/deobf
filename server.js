@@ -50,7 +50,7 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     // Command: !deobfuscate with attachment
-    if (message.content.startsWith('.l')) {
+    if (message.content.startsWith('!deobfuscate')) {
         const attachment = message.attachments.first();
         
         if (!attachment) {
@@ -89,7 +89,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Help command
-    if (message.content === '.help' || message.content === '.lhelp') {
+    if (message.content === '!help' || message.content === '!deobfuscate help') {
         await message.reply(
             '**Prometheus Deobfuscator Bot**\n\n' +
             '**Usage:**\n' +
