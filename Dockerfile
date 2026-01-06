@@ -1,41 +1,59 @@
-# ============================================================
-# Dockerfile for Prometheus-DeobfuscatorV2
-# ============================================================
+# Multi-stage build for minimal image
+FROM alpine:latest AS builder
 
-FROM ubuntu:22.04
+# Install build dependencies
+RUN apk add --no-cache \
+    build-base \
+    cmake \
+    git \
+    curl \
+    readline-dev
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Build LuaJIT 2.1 (latest stable)
+WORKDIR /tmp
+RUN git clone https://github.com/LuaJIT/LuaJIT.git && \
+    cd LuaJIT && \
+    git checkout v2.1 && \
+    make -j$(nproc) && \
+    make install PREFIX=/usr/local
+
+# --- Main image ---
+FROM node:20-alpine
+
+# Install LuaJIT runtime dependencies
+RUN apk add --no-cache \
+    luajit \
+    luajit-dev \
+    readline \
+    readline-dev \
+    libgcc
+
+# Copy LuaJIT from builder
+COPY --from=builder /usr/local/lib/libluajit-5.1.so.2 /usr/lib/
+COPY --from=builder /usr/local/bin/luajit /usr/bin/
+COPY --from=builder /usr/local/include/luajit-2.1 /usr/include/luajit-2.1
+
+# Create app directory
 WORKDIR /app
 
-# ------------------------------------------------------------
-# Install system deps
-# ------------------------------------------------------------
-RUN apt-get update && apt-get install -y \
-    git curl build-essential unzip \
-    lua5.1 lua5.1-dev luarocks \
-    ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+# Copy package files
+COPY package*.json ./
 
-# ------------------------------------------------------------
-# Install Node.js (Render supports 18 LTS normally)
-# ------------------------------------------------------------
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs
+# Install Node.js dependencies
+RUN npm ci --only=production
 
-# ------------------------------------------------------------
-# Copy project files
-# ------------------------------------------------------------
-COPY . .
+# Copy application files
+COPY cli.lua ./server.js ./
 
-# ------------------------------------------------------------
-# Install backend deps
-# ------------------------------------------------------------
-RUN npm install --production
+# Create temp directory
+RUN mkdir -p /tmp/prometheus-deob && chmod 777 /tmp/prometheus-deob
 
-# ------------------------------------------------------------
-# Configure service
-# ------------------------------------------------------------
-EXPOSE 3000
-ENV PORT=3000
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s \
+    CMD node -e "require('http').get('http://localhost:10000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
 
+# Expose port for Render
+EXPOSE 10000
+
+# Start bot
 CMD ["node", "server.js"]
