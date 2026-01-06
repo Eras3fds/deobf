@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "postinstall": "npm install --package-lock-only"
+    "dev": "nodemon server.js"
   },
   "keywords": ["discord", "lua", "deobfuscator", "prometheus", "bot"],
   "author": "",
