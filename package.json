@@ -1,23 +1,15 @@
 {
-  "name": "prometheus-deob-discord",
-  "version": "3.0.0",
-  "description": "Discord bot for Prometheus Lua deobfuscation",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
-  "keywords": ["discord", "lua", "deobfuscator", "prometheus", "bot"],
-  "author": "",
-  "license": "MIT",
+  "name": "prometheus-deobfuscator-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for deobfuscating Prometheus-obfuscated Lua scripts",
+  "main": "bot.lua",
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
+    "SinisterRectus/discordia": "2.8.4"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
+  "scripts": {
+    "start": "luajit bot.lua"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "keywords": ["discord", "lua", "deobfuscator", "prometheus"],
+  "author": "",
+  "license": "MIT"
 }
