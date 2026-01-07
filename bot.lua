@@ -1110,6 +1110,25 @@ local function count_ifs(block)
     return c
 end
 
+local function collect_leaves_vm(block)
+    local K = Ast.AstKind
+    local leaves = {}
+    local function dive(node)
+        if not node then return end
+        if node.kind == K.IfStatement then
+            dive(node.body)
+            for _, eif in ipairs(node.elseifs or {}) do dive(eif.body) end
+            if node.elsebody then
+                if node.elsebody.kind == K.IfStatement then dive(node.elsebody) else table.insert(leaves, node.elsebody) end
+            end
+        else
+            if node.kind == K.Block then table.insert(leaves, node) end
+        end
+    end
+    dive(block)
+    return leaves
+end
+
 local function find_best_dispatch(ast)
     local K = Ast.AstKind
     local best, best_parent, best_index, best_pos_scope, best_pos_id, best_score = nil, nil, nil, nil, nil, -1
@@ -1140,7 +1159,7 @@ local function find_best_dispatch(ast)
 end
 
 local function instrument_in_place(ast, while_node, pos_scope, pos_id)
-    local leaves = collect_leaves(while_node.body)
+    local leaves = collect_leaves_vm(while_node.body)
     local scope, id = ast.globalScope:resolveGlobal('__log_leaf')
     local hook_var = Ast.VariableExpression(scope, id)
     local pos_var = Ast.VariableExpression(pos_scope, pos_id)
