@@ -12,14 +12,16 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install Lit (this downloads glibc-linked luvi binary)
+# Install Lit package manager
 RUN curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
 
-# Copy and install dependencies
-COPY package.json .
+# Copy LIT package definition
+COPY package.lua .
+
+# Install Discordia and dependencies
 RUN ./lit install
 
-# Final stage
+# Final runtime stage
 FROM debian:bullseye-slim
 
 # Install runtime dependencies only
@@ -28,6 +30,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy application from builder
 COPY --from=builder /app /app
 WORKDIR /app
 COPY bot.lua .
