@@ -1,59 +1,57 @@
-# Multi-stage build for minimal image
-FROM alpine:latest AS builder
+# Use LuaJIT for maximum performance
+FROM alpine:3.18 AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
-    build-base \
-    cmake \
-    git \
-    curl \
-    readline-dev
-
-# Build LuaJIT 2.1 (latest stable)
-WORKDIR /tmp
-RUN git clone https://github.com/LuaJIT/LuaJIT.git && \
-    cd LuaJIT && \
-    git checkout v2.1 && \
-    make -j$(nproc) && \
-    make install PREFIX=/usr/local
-
-# --- Main image ---
-FROM node:20-alpine
-
-# Install LuaJIT runtime dependencies
-RUN apk add --no-cache \
     luajit \
     luajit-dev \
-    readline \
-    readline-dev \
+    build-base \
+    git \
+    curl \
+    tar \
+    gzip
+
+# Install LPM (Lit Package Manager)
+WORKDIR /app
+RUN curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
+
+# Copy dependency lock file
+COPY package.json .
+
+# Install dependencies (cached layer)
+RUN ./lit install
+
+# Final stage
+FROM alpine:3.18
+
+# Install runtime dependencies only
+RUN apk add --no-cache \
+    luajit \
+    ca-certificates \
     libgcc
 
-# Copy LuaJIT from builder
-COPY --from=builder /usr/local/lib/libluajit-5.1.so.2 /usr/lib/
-COPY --from=builder /usr/local/bin/luajit /usr/bin/
-COPY --from=builder /usr/local/include/luajit-2.1 /usr/include/luajit-2.1
+# Copy binaries and app
+COPY --from=builder /app /app
+COPY --from=builder /usr/bin/luajit /usr/bin/luajit
+COPY --from=builder /usr/lib/libluajit*.so* /usr/lib/
 
-# Create app directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy source code
+COPY bot.lua .
 
-# Install Node.js dependencies (use install instead of ci, no lock file needed)
-RUN npm install --only=production
-
-# Copy application files
-COPY cli.lua ./server.js ./
-
-# Create temp directory
-RUN mkdir -p /tmp/prometheus-deob && chmod 777 /tmp/prometheus-deob
+# Create non-root user
+RUN addgroup -g 1000 bot && \
+    adduser -D -u 1000 -G bot bot && \
+    chown -R bot:bot /app
+USER bot
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s \
-    CMD node -e "require('http').get('http://localhost:10000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD luajit -e "require('http').get('http://localhost:10000', function() end)"
 
-# Expose port for Render
+# Expose port for health check
 EXPOSE 10000
 
 # Start bot
-CMD ["node", "server.js"]
+CMD ["luajit", "bot.lua"]
