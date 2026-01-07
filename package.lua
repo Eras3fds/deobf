@@ -7,7 +7,7 @@ return {
     "SinisterRectus/discordia"
   },
   files = {
-    "**.lua",
-    "!test*"
+    "bot.lua",
+    "*.lua"
   }
 }
