@@ -1,7 +1,7 @@
 --[[
-    Prometheus Deobfuscator Bot - Docker Ready
-    Usage: docker-compose up
-    Render: Direct Docker deploy
+    Prometheus Discord Deobfuscator Bot
+    Usage: .l <attach Lua file>
+    Setup: Add DISCORD_TOKEN env var
 --]]
 
 -- ============================================================================
@@ -15,12 +15,12 @@ local PORT = tonumber(process.env.PORT or os.getenv('PORT') or '10000')
 
 if not DISCORD_TOKEN or DISCORD_TOKEN == '' then
     print('❌ ERROR: DISCORD_TOKEN environment variable not set!')
-    print('   Set it in your .env file or Docker environment')
+    print('   Add it in Render Dashboard > Environment Variables')
     os.exit(1)
 end
 
 -- ============================================================================
--- 2. HTTP HEALTH CHECK SERVER
+-- 2. HTTP HEALTH CHECK SERVER (Required by Render)
 -- ============================================================================
 local http = require('http')
 local server = http.createServer(function(req, res)
@@ -1185,7 +1185,7 @@ function modules.UndoVmify:apply(ast, pipeline)
     local new = {}
     for _, pos in ipairs(ordered) do
         local idx
-        for i, p in ipairs(pos_order) do if p == pos then idx = i; break end end
+        for i, p in ipairs(pos_order) do if p == pos then idx = i; break end
         local leaf = idx and leaves[idx] or nil
         if leaf then
             for _, st in ipairs(leaf.statements) do
@@ -1514,7 +1514,7 @@ client:on('messageCreate', function(message)
     attachment:download(function(err, data)
         if err then
             print('[Error] ' .. tostring(err))
-            message:reply('❌ Download failed: ' .. tostring(err))
+            message:reply('❌ Failed to download: ' .. tostring(err))
             message:removeReaction('⏳')
             return
         end
